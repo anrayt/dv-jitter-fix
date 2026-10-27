@@ -40,6 +40,8 @@ main { max-width: 680px; margin: 0 auto; display: grid; gap: 28px; }
 header { display: grid; gap: 10px; }
 h1 { font-family: var(--font-display); font-weight: 900; font-size: clamp(44px, 11vw, 76px); line-height: .9; margin: 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
 h1 span { color: var(--rec); }
+.demo { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.demo b { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--rec); border: 1px solid var(--rec); border-radius: 999px; padding: 2px 9px; }
 .lead { margin: 0; max-width: 58ch; color: var(--muted); }
 .lead strong { color: var(--ink); }
 
@@ -104,6 +106,10 @@ input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; poin
 .field .v.good { color: var(--ok); }
 .field .d { font-size: 13px; color: var(--muted); }
 .note { font-size: 13px; color: var(--muted); }
+footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); }
+footer p { margin: 0; }
+footer a { color: var(--tape); text-underline-offset: 2px; }
+footer a:focus-visible { outline: 3px solid var(--rec); outline-offset: 2px; border-radius: 2px; }
 .warn { background: var(--surface); border: 1px solid var(--rec); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
 @media (max-width: 520px) {
   .fields { grid-template-columns: 1fr; }
