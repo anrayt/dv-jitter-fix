@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Remove the every-other-frame shake from camcorder clips recorded through a DVR. Runs in your browser, nothing is uploaded.">
+<title>DV Jitter Fix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main>
+  <header>
+    <h1>DV Jitter <span>Fix</span></h1>
+    <p class="lead">Drop clips recorded off a camcorder with a DVR. Every second frame in them jumps about a pixel up or down. This page finds that jump in each clip and lines the frames back up. <strong>Your videos never leave your device.</strong></p>
+  </header>
+
+  <div id="unsupported" class="warn" hidden>This browser can't process video. Open the page in Chrome or Edge on a computer, or Safari 17+ on Mac or iPhone.</div>
+
+  <label class="vf" id="drop" tabindex="0" for="pick">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <span class="osd rec"><i></i>REC</span>
+    <span class="vf-msg">
+      <span class="big">Drop clips here</span>
+      <span class="small">.mov or .mp4 from the PowerPlay card. Several at once is fine.</span>
+      <span class="btn">Choose files</span>
+    </span>
+  </label>
+  <input type="file" id="pick" accept="video/*,.mov,.mp4,.m4v" multiple>
+
+  <section id="tapesWrap" hidden>
+    <div class="tapes-head">
+      <h2>Tapes</h2>
+    </div>
+    <div class="tapes" id="tapes"></div>
+  </section>
+
+  <section class="how">
+    <h2>What it fixes</h2>
+    <p>The camera sends interlaced video: each frame is two half-frames, odd lines and even lines. The DVR saves each half-frame as its own frame at 50 fps. The two halves sit about a pixel apart, so the picture shakes even on a tripod.</p>
+    <div class="fields">
+      <div class="field"><span class="k">Jump, original</span><span class="v bad">1.45 px</span><span class="d">every 2nd frame</span></div>
+      <div class="field"><span class="k">After fix</span><span class="v good">~0.1 px</span><span class="d">below what the eye sees</span></div>
+      <div class="field"><span class="k">Output</span><span class="v">50 fps</span><span class="d">same frames, H.264 .mp4, 24 Mbit/s</span></div>
+    </div>
+    <p class="note">Example numbers measured on clips from a Sony DCR-PC115E. Frames are moved on the original YUV data with Lanczos interpolation, split between both frames of each pair so sharpness stays even.</p>
+  </section>
+</main>
+
+<script src="lib/mp4box.all.min.js"></script>
+<script src="lib/mp4-muxer.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
