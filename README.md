@@ -48,13 +48,6 @@ To stop the server, press **Ctrl + C** in Terminal.
 > Opening `index.html` straight from the folder (double-click) often works in Chrome too, but some
 > browsers block video processing on pages opened that way. The local server always works.
 
-## Deploy on Render
-
-1. Put this folder in a GitHub repo (index.html, style.css, app.js, lib/, render.yaml at the root).
-2. Render dashboard -> New -> Blueprint -> pick the repo -> Apply.
-   (Or New -> Static Site, Build Command: leave the default echo, Publish directory: `./`.)
-3. Render gives you a URL like https://dv-jitter-fix.onrender.com
-
 ## Files
 
 - `index.html` - page markup
