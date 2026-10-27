@@ -53,3 +53,5 @@ To stop the server, press **Ctrl + C** in Terminal.
 - `app.js` - measuring, shifting and re-encoding the clips
 - `lib/` - mp4box.js 0.5.2 (read MOV/MP4), mp4-muxer 5.1.3 (write MP4)
 - `render.yaml` - Render static site config
+- `dev/` - test tools: drive the page in headless Chrome, measure the results
+- `CLAUDE.md` - how the code works and how to test it, for working on it with Claude Code

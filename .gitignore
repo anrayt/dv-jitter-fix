@@ -1,1 +1,4 @@
 .DS_Store
+dev/clips/
+dev/out/
+dev/.venv/
