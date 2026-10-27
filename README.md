@@ -1,6 +1,4 @@
-# DV Jitter Fix
-
-> **Demo.** This is a test project. Work on copies of your clips and keep the originals.
+# DV Jitter Fix (beta)
 
 Removes the up-and-down shake from camcorder clips recorded through a DVR
 (ImmersionRC PowerPlay and similar). The DVR saves each interlaced half-frame
