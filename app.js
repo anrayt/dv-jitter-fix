@@ -621,13 +621,29 @@
     const actions = document.createElement('div');
     actions.className = 'actions';
     const btn = document.createElement('button');
-    btn.className = 'btn'; btn.type = 'button'; btn.textContent = 'Save ' + outName;
+    btn.className = 'btn'; btn.type = 'button'; btn.textContent = shareable(outName, blob) ? 'Save video' : 'Save ' + outName;
     btn.addEventListener('click', () => saveOne(outName, blob, btn));
     actions.appendChild(btn);
     ui.el.appendChild(actions);
   }
 
-  function saveOne(name, blob, btn) {
+  // Phones save downloads to Files, not to the gallery. The share sheet has "Save Video", which does.
+  const touch = matchMedia('(pointer: coarse)').matches;
+  function shareable(name, blob) {
+    try { return touch && !!navigator.canShare && navigator.canShare({ files: [new File([blob], name, { type: 'video/mp4' })] }); }
+    catch { return false; }
+  }
+
+  async function saveOne(name, blob, btn) {
+    if (shareable(name, blob)) {
+      try {
+        await navigator.share({ files: [new File([blob], name, { type: 'video/mp4' })] });
+        btn.textContent = 'Saved';
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // closed the share sheet
+      }
+    }
     download(name, blob);
     btn.textContent = 'Saved ' + name;
   }
