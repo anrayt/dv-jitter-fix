@@ -60,7 +60,8 @@ no server code, no npm. Live at https://dv-jitter-fix.onrender.com, repo https:/
 8. `paintBars` — `bar` = rows pulled in from outside (ceil of the largest |shift|) rounded up to even; the top and bottom `bar` luma rows (bar/2 chroma
    rows) are painted black (Y 16, UV 128) on **every** frame, so the border doesn't flicker. Size
    stays as in the input: no crop, no scaling.
-9. Encode — H.264 level 4.1 (High → Main → Baseline, first supported; 4.0 caps at 25 Mbit/s), 40 Mbit/s VBR (16 → 84 %, 24 → 88 %, 40 → 94 % of horizontal detail on clip 177; owner chose 40), `latencyMode: quality`,
+9. Encode — H.264 level 4.1 (High → Main → Baseline, first supported; 4.0 caps at 25 Mbit/s), VBR at the bitrate from the `#quality` select (40 default / 24 / 16 Mbit/s, ≈290 / 175 / 115 MB per
+   minute; 94 / 88 / 84 % of horizontal detail on clip 177), remembered in localStorage, `latencyMode: quality`,
    key frame every 50 encoded frames, frames tagged BT.601 (`SD_COLOR`). Timestamps = source − start,
    so frame count and timing match the source 1:1. Audio is copied, not re-encoded.
 10. Save — desktop: `<a download>`. Touch devices with `navigator.canShare({files})`: share sheet

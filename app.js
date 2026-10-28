@@ -27,6 +27,11 @@
   drop.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); $('pick').click(); } });
   $('pick').addEventListener('change', (ev) => { addFiles(ev.target.files); ev.target.value = ''; });
 
+  // Output bitrate. Read when each clip starts encoding; the choice is remembered in this browser.
+  const quality = $('quality');
+  try { const q = localStorage.getItem('quality'); if (q && [...quality.options].some((o) => o.value === q)) quality.value = q; } catch {}
+  quality.addEventListener('change', () => { try { localStorage.setItem('quality', quality.value); } catch {} });
+
   function addFiles(list) {
     if (!supported) return;
     const files = [...list].filter((f) => /\.(mov|mp4|m4v)$/i.test(f.name) || f.type.startsWith('video/'));
@@ -510,9 +515,9 @@
     for (const c of [p.u, p.v]) { c.fill(128, 0, cb * p.cw); c.fill(128, (p.ch - cb) * p.cw); }
   }
 
-  async function pickEncoderConfig(w, h, fps) {
+  async function pickEncoderConfig(w, h, fps, bitrate) {
     for (const codec of ['avc1.640029', 'avc1.4d4029', 'avc1.42e029']) {
-      const cfg = { codec, width: w, height: h, bitrate: 40_000_000, bitrateMode: 'variable', framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' };
+      const cfg = { codec, width: w, height: h, bitrate, bitrateMode: 'variable', framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' };
       const s = await VideoEncoder.isConfigSupported(cfg).catch(() => ({ supported: false }));
       if (s.supported) return cfg;
     }
@@ -556,7 +561,7 @@
     ui.state('Fixing', 'work');
     // muxer
     const hasAudio = !!(d.audio && d.aDesc && /^mp4a/.test(d.audio.codec));
-    const encCfg = await pickEncoderConfig(w, h, fps);
+    const encCfg = await pickEncoderConfig(w, h, fps, +quality.value);
     const muxer = new Mp4Muxer.Muxer({
       target: new Mp4Muxer.ArrayBufferTarget(),
       video: { codec: 'avc', width: w, height: h, frameRate: fps },
@@ -626,7 +631,7 @@
     ui.progress(1);
     ui.state('Fixed', 'done');
     const extra = (hasAudio ? '' : (d.audio ? ' · audio format not supported, saved without sound' : '')) + (viaRgb ? ' · colours went through RGB in this browser' : '');
-    ui.meta(`${jumpText} → fixed · ${(blob.size / 1048576).toFixed(1)} MB${extra}`);
+    ui.meta(`${jumpText} → fixed · ${encCfg.bitrate / 1e6} Mbit/s · ${(blob.size / 1048576).toFixed(1)} MB${extra}`);
 
     const video = document.createElement('video');
     video.src = URL.createObjectURL(blob);

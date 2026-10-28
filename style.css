@@ -95,6 +95,10 @@ input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; poin
 .tape .actions .btn { color: var(--ink); font-size: 14px; padding: 7px 14px; }
 
 /* explainer */
+.quality { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.quality label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.quality select { font: 15px var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; max-width: 100%; }
+.quality select:focus-visible { outline: 3px solid var(--rec); outline-offset: 2px; }
 .how { border-top: 1px solid var(--line); padding-top: 20px; display: grid; gap: 14px; }
 .how h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; text-transform: uppercase; margin: 0; letter-spacing: .03em; }
 .how p { margin: 0; max-width: 62ch; color: var(--muted); }
