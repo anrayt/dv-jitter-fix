@@ -45,9 +45,9 @@
     <div class="fields">
       <div class="field"><span class="k">Jump, original</span><span class="v bad">1.45 px</span><span class="d">every 2nd frame</span></div>
       <div class="field"><span class="k">After fix</span><span class="v good">~0.1 px</span><span class="d">below what the eye sees</span></div>
-      <div class="field"><span class="k">Output</span><span class="v">50 fps</span><span class="d">same frames, H.264 .mp4, 24 Mbit/s</span></div>
+      <div class="field"><span class="k">Output</span><span class="v">50 fps</span><span class="d">same frames, H.264 .mp4, 40 Mbit/s</span></div>
     </div>
-    <p class="note">Example numbers measured on clips from a Sony DCR-PC115E. Frames are moved on the original YUV data with Lanczos interpolation, split between both frames of each pair so sharpness stays even.</p>
+    <p class="note">Example numbers measured on clips from a Sony DCR-PC115E. Frames are moved on the original YUV data with a 16-tap Lanczos filter that keeps the full sharpness, split between both frames of each pair; a thin black bar at the top and bottom of every frame hides the edge.</p>
   </section>
 
   <footer>

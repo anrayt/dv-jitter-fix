@@ -51,11 +51,16 @@ no server code, no npm. Live at https://dv-jitter-fix.onrender.com, repo https:/
 6. Batch borrowing — `run()` re-queues a job when `processFile` throws `DEFER` (unsure, nothing in
    `known`, other non-deferred jobs waiting). `job.analysis` is cached so it isn't re-measured.
 7. `splitShift(off)` — e = off − round(off); even frames move −e/2, odd frames round(off)+e/2, so
-   each frame is at most ¼ px off-grid and both get the same interpolation (no sharpness flicker).
-   Frame sign in pass 2 = `parity(n) * flipAt(segs, n)`; `needs` only if |off| ≥ 0.1.
-8. `shiftPlane` — Lanczos-3, 6 taps, weights normalised, edge rows repeated; `out(y) = in(y + t)`.
-   Chroma planes shift by t/2.
-9. Encode — H.264 (High → Main → Baseline, first supported), 24 Mbit/s VBR, `latencyMode: quality`,
+   each frame is at most ¼ px off-grid and both get the same treatment. Frame sign in pass 2 =
+   `parity(n) * flipAt(segs, n)`; `needs` only if |off| ≥ 0.1. `shiftPlane` — Lanczos-8 (16 taps,
+   `TAPS`), weights normalised, edge rows repeated; `out(y) = in(y + t)`, chroma by t/2. Whole-pixel
+   t is a plain row copy. Owner needs sharpness: Lanczos-3 kept ~91 % of fine vertical detail, a
+   whole-pixel-only move kept 100 % but left 0.2–0.5 px of jitter; Lanczos-8 keeps ~99.6 % with no
+   jitter left. Don't shorten the filter.
+8. `paintBars` — `bar` = rows pulled in from outside (ceil of the largest |shift|) rounded up to even; the top and bottom `bar` luma rows (bar/2 chroma
+   rows) are painted black (Y 16, UV 128) on **every** frame, so the border doesn't flicker. Size
+   stays as in the input: no crop, no scaling.
+9. Encode — H.264 level 4.1 (High → Main → Baseline, first supported; 4.0 caps at 25 Mbit/s), 40 Mbit/s VBR (16 → 84 %, 24 → 88 %, 40 → 94 % of horizontal detail on clip 177; owner chose 40), `latencyMode: quality`,
    key frame every 50 encoded frames, frames tagged BT.601 (`SD_COLOR`). Timestamps = source − start,
    so frame count and timing match the source 1:1. Audio is copied, not re-encoded.
 10. Save — desktop: `<a download>`. Touch devices with `navigator.canShare({files})`: share sheet
@@ -65,6 +70,9 @@ Progress bar: 0–0.4 analysing, 0.4–1 encoding. The clip meta line shows size
 jump, "N frame-order slip(s) found", "(size taken from your other clips)", or why it was left as is.
 
 ## Reference numbers (owner's clips, keep these as regression targets)
+
+Residuals below were measured with Lanczos-3 and full-height output; re-measure with Lanczos-8 and the
+black bars when the clips are back (expect the same residuals, more detail).
 
 | clip | jump (check.py) | page | residual after fix |
 |---|---|---|---|

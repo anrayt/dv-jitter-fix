@@ -455,12 +455,15 @@
   }
 
   // ---------- pass 2: shift frames, encode, mux ----------
-  // Lanczos-3 vertical resample: out(y) = in(y + t). Edges repeat the last row.
+  // Vertical resample out(y) = in(y + t) with Lanczos-8 (16 taps). The short Lanczos-3 kept only 80–90 % of
+  // the detail at a ¼–½ px shift; 16 taps keep ~100 %, so a fractional move costs no sharpness.
+  // A whole-pixel t is a plain row copy. Edges repeat the last row (the black bars cover them).
+  const TAPS = 8;
   function lanczos(x) {
     if (x === 0) return 1;
-    if (Math.abs(x) >= 3) return 0;
+    if (Math.abs(x) >= TAPS) return 0;
     const px = Math.PI * x;
-    return 3 * Math.sin(px) * Math.sin(px / 3) / (px * px);
+    return TAPS * Math.sin(px) * Math.sin(px / TAPS) / (px * px);
   }
   function shiftPlane(src, dst, w, h, t) {
     const k = Math.floor(t), f = t - k;
@@ -471,19 +474,19 @@
       }
       return;
     }
-    const wt = new Float32Array(6);
+    const n = 2 * TAPS, wt = new Float32Array(n), rows = new Int32Array(n);
     let sum = 0;
-    for (let j = 0; j < 6; j++) { wt[j] = lanczos(j - 2 - f); sum += wt[j]; }
-    for (let j = 0; j < 6; j++) wt[j] /= sum;
-    const rows = new Int32Array(6);
+    for (let j = 0; j < n; j++) { wt[j] = lanczos(j - TAPS + 1 - f); sum += wt[j]; }
+    for (let j = 0; j < n; j++) wt[j] /= sum;
+    const acc = new Float32Array(w);
     for (let y = 0; y < h; y++) {
-      for (let j = 0; j < 6; j++) rows[j] = Math.min(h - 1, Math.max(0, y + k + j - 2)) * w;
-      const o = y * w;
-      for (let x = 0; x < w; x++) {
-        const v = wt[0] * src[rows[0] + x] + wt[1] * src[rows[1] + x] + wt[2] * src[rows[2] + x]
-                + wt[3] * src[rows[3] + x] + wt[4] * src[rows[4] + x] + wt[5] * src[rows[5] + x];
-        dst[o + x] = v + 0.5; // Uint8Array clamps to 0..255
+      for (let j = 0; j < n; j++) rows[j] = Math.min(h - 1, Math.max(0, y + k + j - TAPS + 1)) * w;
+      acc.fill(0.5);
+      for (let j = 0; j < n; j++) {
+        const r = rows[j], c = wt[j];
+        for (let x = 0; x < w; x++) acc[x] += c * src[r + x];
       }
+      dst.set(acc, y * w); // Uint8Array clamps to 0..255 and truncates (0.5 added above rounds)
     }
   }
   function shiftI420(p, out, t) {
@@ -492,23 +495,31 @@
     shiftPlane(p.v, out.v, p.cw, p.ch, t / 2);
   }
 
-  // Split the correction between both frames of a pair so each one moves by at most a quarter pixel
-  // off the integer grid. Both frames then get the same (small) amount of interpolation, so sharpness
-  // doesn't flicker from frame to frame.
+  // Odd frames move by the whole-pixel part of the jump; the fractional rest is split between both frames
+  // of a pair, so each is at most ¼ px off the pixel grid and both get the same treatment.
   function splitShift(off) {
     const e = off - Math.round(off);
     return { even: -e / 2, odd: Math.round(off) + e / 2 };
   }
 
+  // Black bars `bar` luma rows high at top and bottom (bar is even, so chroma gets bar / 2 whole rows).
+  // Painted on every frame, so the border is the same on both frames of a pair and doesn't flicker.
+  function paintBars(p, bar) {
+    const cb = bar / 2;
+    p.y.fill(16, 0, bar * p.w); p.y.fill(16, (p.h - bar) * p.w);
+    for (const c of [p.u, p.v]) { c.fill(128, 0, cb * p.cw); c.fill(128, (p.ch - cb) * p.cw); }
+  }
+
   async function pickEncoderConfig(w, h, fps) {
-    for (const codec of ['avc1.640028', 'avc1.4d4028', 'avc1.42e028']) {
-      const cfg = { codec, width: w, height: h, bitrate: 24_000_000, bitrateMode: 'variable', framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' };
+    for (const codec of ['avc1.640029', 'avc1.4d4029', 'avc1.42e029']) {
+      const cfg = { codec, width: w, height: h, bitrate: 40_000_000, bitrateMode: 'variable', framerate: fps, avc: { format: 'avc' }, latencyMode: 'quality' };
       const s = await VideoEncoder.isConfigSupported(cfg).catch(() => ({ supported: false }));
       if (s.supported) return cfg;
     }
     throw new Error("This browser can't encode H.264 video.");
   }
 
+  const signed = (v) => (+v >= 0 ? '+' : '−') + String(v).replace('-', '');
   const DEFER = Symbol('defer');
   const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
 
@@ -539,7 +550,7 @@
     const flips = needs ? m.segs.length - 1 : 0;
     const note = !needs ? (m.unsure ? ' (too little detail to measure, re-saved as is)' : ' (clean, re-saved as is)')
       : (m.borrowed ? ' (size taken from your other clips)' : '') + (flips ? ` · ${flips} frame-order slip${flips > 1 ? 's' : ''} found` : '');
-    const jumpText = `${w}×${h} · ${fps} fps · ${dur.toFixed(1)} s · jump <b>${off >= 0 ? '+' : '−'}${Math.abs(off).toFixed(2)} px</b>${note}`;
+    const jumpText = `${w}×${h} · ${fps} fps · ${dur.toFixed(1)} s · jump <b>${signed(off.toFixed(2))} px</b>${note}`;
     ui.meta(jumpText);
 
     ui.state('Fixing', 'work');
@@ -558,6 +569,9 @@
     enc.configure(encCfg);
 
     const shift = needs ? splitShift(off) : { even: 0, odd: 0 };
+    // rows pulled in from outside the frame, rounded up to even so chroma rows (pairs of luma rows) line up
+    const reach = Math.ceil(Math.max(Math.abs(shift.even), Math.abs(shift.odd)) - 1e-4);
+    const bar = reach + reach % 2;
     let kept = 0, src = null, dst = null, viaRgb = false, pending = Promise.resolve(), workErr = null;
     const total = d.vSamples.length;
     const { dec, err } = await makeDecoder(d, (frame) => {
@@ -571,6 +585,7 @@
         const n = frameNo(frame.timestamp, d);
         const t = parity(n) * flipAt(m.segs, n) > 0 ? shift.odd : shift.even;
         const out = t === 0 ? src : (shiftI420(src, dst, t), dst);
+        if (bar) paintBars(out, bar);
         const vf = new VideoFrame(out.buf, {
           format: 'I420', codedWidth: w, codedHeight: h,
           timestamp: frame.timestamp - startUs, duration: frame.duration ?? undefined, colorSpace: SD_COLOR,
